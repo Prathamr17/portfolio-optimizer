@@ -6,6 +6,13 @@ __pycache__/
 # C extensions
 *.so
 
+
+# Data files (contain raw fetched data, not needed in repo)
+backend/app/sample_request.json
+backend/app/aapl_googl_msft.json
+backend/app/aapl_jnj_xom_tlt.json
+backend/app/preset_assets.ts
+
 # Distribution / packaging
 .Python
 build/
