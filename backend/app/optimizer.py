@@ -37,33 +37,26 @@ def monte_carlo_simulation(
     n_portfolios: int = 10000,
     periods_per_year: int = 252,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """
-    Generates n_portfolios random weight combinations, computes their
-    (return, volatility, sharpe) triples.
-
-    Returns:
-        results: (3, n_portfolios) array -> [returns, volatility, sharpe]
-        weights_record: (n_portfolios, n_assets) array of weights used
-    """
     n_assets = len(mean_returns)
-    results = np.zeros((3, n_portfolios))
-    weights_record = np.zeros((n_portfolios, n_assets))
 
-    for i in range(n_portfolios):
-        # Dirichlet distribution ensures weights sum to 1 and are non-negative
-        # (no short-selling) — standard simplifying assumption for retail-style MPT demos
-        weights = np.random.dirichlet(np.ones(n_assets))
-        weights_record[i] = weights
+    # Generate all random weights at once (vectorized) instead of looping
+    weights_record = np.random.dirichlet(np.ones(n_assets), size=n_portfolios)
 
-        port_return, port_vol = portfolio_performance(
-            weights, mean_returns, cov_matrix, periods_per_year
-        )
-        sharpe = (port_return - risk_free_rate) / port_vol if port_vol > 0 else 0
+    # Vectorized portfolio returns: (n_portfolios, n_assets) @ (n_assets,) -> (n_portfolios,)
+    port_period_returns = weights_record @ mean_returns
+    port_annual_returns = annualize_return(port_period_returns, periods_per_year)
 
-        results[0, i] = port_return
-        results[1, i] = port_vol
-        results[2, i] = sharpe
+    # Vectorized portfolio variance for all portfolios at once
+    port_variances = np.einsum('ij,jk,ik->i', weights_record, cov_matrix, weights_record)
+    port_annual_vols = annualize_volatility(np.sqrt(port_variances), periods_per_year)
 
+    sharpe = np.where(
+        port_annual_vols > 0,
+        (port_annual_returns - risk_free_rate) / port_annual_vols,
+        0
+    )
+
+    results = np.array([port_annual_returns, port_annual_vols, sharpe])
     return results, weights_record
 
 
