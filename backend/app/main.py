@@ -8,14 +8,16 @@ from app.metrics import compute_all_metrics
 
 app = FastAPI(title="Portfolio Optimizer API", version="1.0.0")
 
-# CORS — needed for Vercel frontend to call Railway backend
+# CORS — needed for Vercel frontend to call Render backend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # tighten to your Vercel domain before final submission
+    allow_origins=[
+        "http://localhost:5173",  # local dev
+        "https://portfolio-optimizer-orpin.vercel.app",  # production frontend
+    ],
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 
 @app.get("/")
 def health_check():
